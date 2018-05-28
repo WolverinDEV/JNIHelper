@@ -10,6 +10,7 @@ template <> \
 struct type<source, target> { \
         using TargetType = target; \
         using SourceType = source; \
+        static constexpr bool supported() { return true; } \
      \
         static TargetType convert(SourceType src){ \
             function; \
@@ -42,7 +43,24 @@ namespace JNIHelper {
     struct TypeConverter {
         using TargetType = Target;
         using SourceType = Source;
-        static TargetType convert(SourceType src){ throw Exceptions::TypeConversationNotSupportedException(std::string("Cant convert from ") + typeid(Source).name() + " to " + typeid(Target).name()); }
+
+#ifdef STATIC_ASSERT
+        static constexpr bool supported() { return false; }
+#endif
+
+        static TargetType convert(SourceType src){
+            static_assert(TypeConverter<Source, Target>::supported() == true, "Type cast not supported!");
+            throw Exceptions::TypeConversationNotSupportedException(std::string("TypeConverter -> Cant convert from ") + typeid(Source).name() + " to " + typeid(Target).name());
+        }
+    };
+
+
+    template <typename Source>
+    struct TypeConverter<Source, void> {
+        using TargetType = void;
+        using SourceType = Source;
+        static constexpr bool supported() { return true; }
+        static TargetType convert(SourceType src){  }
     };
 
     template <typename Source>
@@ -50,7 +68,21 @@ namespace JNIHelper {
         using SourceType = Source;
         //using TargetType = void*;
 
-        static void convert(Source src){  throw Exceptions::TypeConversationNotSupportedException(std::string("Cant convert from cpp type '") + typeid(Source).name() + "' to jni type");  }
+#ifdef STATIC_ASSERT
+        static constexpr bool supported() { return false; }
+#endif
+
+        static void convert(Source src){
+            static_assert(CppToJniConverter<Source>::supported() == true, "Type cast not supported!");
+            throw Exceptions::TypeConversationNotSupportedException(std::string("CppToJniConverter -> Cant convert from cpp type '") + typeid(Source).name() + "' to jni type");
+        }
+    };
+
+    template <>
+    struct CppToJniConverter<void> {
+        using SourceType = void;
+        using TargetType = void*;
+        static void* convert(void){ return nullptr; }
     };
 
     template <typename Source, typename Target>
@@ -58,6 +90,16 @@ namespace JNIHelper {
         using TargetType = Target;
         using SourceType = Source;
 
-        static Target convert(Source src){  throw Exceptions::TypeConversationNotSupportedException(std::string("Cant convert from jni type '") + typeid(Source).name() + "' to cpp '" + typeid(Target).name() + "'");  }
+#ifdef STATIC_ASSERT
+        static constexpr bool supported() { return false; }
+#endif
+        static Target convert(Source src){
+#ifdef STATIC_ASSERT
+            static_assert(JniToCppConverter<Source, Target>::supported() == true, "Type cast not supported!");
+#else
+            JniToCppConverter<Source, Target>::supported(); //Compile error here if convert isnt supported
+#endif
+            throw Exceptions::TypeConversationNotSupportedException(std::string("JniToCppConverter -> Cant convert from jni type '") + typeid(Source).name() + "' to cpp '" + typeid(Target).name() + "'");
+        }
     };
 }

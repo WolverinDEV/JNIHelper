@@ -92,9 +92,12 @@ namespace JNIHelper {
     DEFINE_CPP_JNI_CONVERTER(uint64_t, jlong, return (jlong) src);
     DEFINE_CPP_JNI_CONVERTER(void*, jlong, return (jlong) src);
 
+    DEFINE_JNI_CPP_CONVERTER(void*, void, );
+    DEFINE_TYPE_CONVERTER(jvalue, void*, );
+
     class JavaObject;
     namespace DefaultConverterImpl {
-        extern jstring convertString(std::string);
+        extern jstring convertString(const std::string);
 
         extern std::string convertString(jstring);
 
@@ -110,8 +113,4 @@ namespace JNIHelper {
 
     DEFINE_CPP_JNI_CONVERTER(const char*, jstring, return DefaultConverterImpl::convertString(src));
     DEFINE_JNI_CPP_CONVERTER(jstring, const char*, return DefaultConverterImpl::convertCString(src));
-
-    DEFINE_CPP_JNI_CONVERTER(JavaObject*, jobject, return DefaultConverterImpl::convertJObject(src));
-    DEFINE_CPP_JNI_CONVERTER(JavaObject&, jobject, return DefaultConverterImpl::convertJObject(&src));
-    DEFINE_CPP_JNI_CONVERTER(JavaObject, jobject, return DefaultConverterImpl::convertJObject(&src));
 }

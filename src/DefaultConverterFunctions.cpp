@@ -8,18 +8,9 @@ using namespace std;
 
 namespace JNIHelper {
     namespace DefaultConverterImpl {
-        jstring convertString(std::string str){
+        jstring convertString(const std::string& str){
             auto env = JNIHelper::getAttachedEnv();
-            jchar* buffer = new jchar[str.length()];
-
-            int index = 0;
-            for(auto _char : str)
-                buffer[index++] = (jchar) _char;
-
-            auto jstr = env->NewString(buffer, (int) str.length());
-
-            delete buffer;
-
+            auto jstr = env->NewString((jchar*) str.data(), (int) str.length());
             return jstr;
         }
 
@@ -56,8 +47,8 @@ namespace JNIHelper {
 
             return shared_ptr<void *>((void**) object, [](void *obj) {
                 if (!obj) return;
-                auto env = JNIHelper::getAttachedEnv();
-                env->DeleteGlobalRef((jobject) obj);
+                auto local_env = JNIHelper::getAttachedEnv();
+                local_env->DeleteGlobalRef((jobject) obj);
             });
         }
     }
