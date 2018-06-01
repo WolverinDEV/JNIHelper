@@ -36,7 +36,7 @@ namespace JNIHelper {
     }
 
     JavaVM* getJVM(){
-        if(!jvmPtr) throw Exceptions::LibraryNotInizalisizedException("JNIHelper isnt initialized yet. (initialize with initializeLibrary(JavaVM*))");
+        if(!jvmPtr) throw Exceptions::LibraryNotInitializedException("JNIHelper isn't initialized yet. (initialize with initializeLibrary(JavaVM*))");
         return jvmPtr;
     }
 

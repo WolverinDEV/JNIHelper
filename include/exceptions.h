@@ -19,9 +19,9 @@ namespace JNIHelper {
                 std::string message;
         };
 
-        class LibraryNotInizalisizedException : public Exception {
+        class LibraryNotInitializedException : public Exception {
             public:
-                LibraryNotInizalisizedException(std::string message) : Exception(message) {}
+                LibraryNotInitializedException(std::string message) : Exception(message) {}
         };
 
         class MissingSignatureException : public Exception {

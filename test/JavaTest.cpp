@@ -26,16 +26,34 @@ DEFINE_JAVA_CLASS(dev_wolveringer, TestClass, JNIHelper::JavaObject,
               DEFINE_STATIC_METHODE(staticCall, void, int);
               DEFINE_METHODE(instanceCall, void, int);
               DEFINE_METHODE(createObject, JNIHelper::JavaObject);
+
+              DEFINE_STATIC_METHODE(staticCallNative, void);
 );
 
 using namespace std;
 
 extern "C" {
     jint JNI_OnLoad(JavaVM *vm, void *reserved) {
-        printf("initialising EasyJNITest libary!\n");
-        JNIHelper::Debug::setDebugMask(JNIHelper::Debug::Type::NONE);
+        printf("initialising EasyJNITest library!\n");
+        //JNIHelper::Debug::setDebugMask(JNIHelper::Debug::Type::FULL);
+        JNIHelper::Debug::setDebugMask(JNIHelper::Debug::Type::BIND);
         JNIHelper::initializeLibrary(vm);
 
+        dev_wolveringer::TestClass::getClass()->registerMethod<void>("staticCallNative", true);
+        dev_wolveringer::TestClass::getClass()->registerMethod<void, int>("staticCallNative2", true);
+        dev_wolveringer::TestClass::getClass()->registerMethod<int>("staticCallNative3", true);
+        const auto& method = dev_wolveringer::TestClass::getClass()->findStaticMethod<void>("staticCallNative");
+        assert(method);
+        method->bind([](){
+            printf("Static method call! (C++)\n");
+        });
+        dev_wolveringer::TestClass::getClass()->findStaticMethod<void, int>("staticCallNative2")->bind([](int a){
+            printf("Static method call with args! (%i)\n", a);
+        });
+        dev_wolveringer::TestClass::getClass()->findStaticMethod<int>("staticCallNative3")->bind([](){
+            printf("Static method call ret\n");
+            return 5;
+        });
         dev_wolveringer::TestClass::staticCall(1);
         dev_wolveringer::TestClass instance;
         instance.init();

@@ -4,6 +4,17 @@
 using namespace std;
 using namespace JNIHelper;
 
+class A {
+public:
+
+    struct {
+        void operator()(){
+
+        }
+
+    } test;
+};
+
 int main() {
     /*
     Test test;
@@ -13,8 +24,10 @@ int main() {
     int i = test;
     cout << "I: " << BaseClass::bstring << i << endl;
      */
-
-
-
+    __asm__("nop");
+    __asm__("push %rax");
+    __asm__("nop");
+    A a;
+    a.test();
     return 0;
 }

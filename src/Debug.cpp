@@ -10,14 +10,15 @@ namespace JNIHelper {
                 "GENERAL",
                 "CLASS_INSTANCE",
                 "RESOLVE",
-                "INVOKE"
+                "INVOKE",
+                "BIND"
             };
         }
 
         const int MAX_BITS = sizeof(Type::GENERAL) * 8;
         static uint8_t debugMask = 0xFF;
 
-        void debug(int type, std::string msg){
+        void debug(int type, const std::string& msg){
             if(!(type & debugMask)) return;
 
             int index = 0;

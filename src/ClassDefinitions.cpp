@@ -7,38 +7,46 @@
 using namespace JNIHelper;
 using namespace std;
 
-JavaClass::JavaClass(std::string package, std::string name, JavaClass *superClass) : package(package), name(name), superClass(superClass) {
+JavaClass::JavaClass(std::string package, std::string name, const std::shared_ptr<JavaClass>& superClass) : package(package), name(name), superClass(superClass) {
     if (superClass) resolveClassInfo();
 }
 
-JavaClass *JavaObject::buildObjectClass() {
-    JavaClass *cls = new JavaClass("java.lang", "Object", nullptr);
-    cls->superClass = cls;
+shared_ptr<JavaClass> JavaClass::buildObjectClass() {
+    shared_ptr<JavaClass> cls (new JavaClass("java.lang", "Object", nullptr));
+    cls->superClass = cls; //Referrer to itself (No delete)
     return cls;
 }
 
 std::mutex classListLock;
-std::deque<JavaClass *> JavaObject::classes = {buildObjectClass()};
+std::mutex classCreateLock;
+std::deque<shared_ptr<JavaClass>> JavaObject::classes = {JavaClass::buildObjectClass()};
 
-JavaClass *JavaObject::getDescription(std::string package, std::string name, JavaClass *superClass) {
+std::shared_ptr<JavaClass> JavaObject::getDescription(const std::string& package, const std::string& name, const std::shared_ptr<JavaClass>& superClass) {
     string javaPackage = package;
     while (javaPackage.find('_') != string::npos) javaPackage[javaPackage.find('_')] = '.';
 
-    classListLock.lock();
+    auto result = find_description(javaPackage, name);
+    if(!result) {
+        lock_guard<mutex> lock(classCreateLock);
+        result = find_description(javaPackage, name);
+        if(!result) {
+            assert(!!superClass);
+            result.reset(new JavaClass(javaPackage, name, superClass));
+            lock_guard<mutex> list_lock(classListLock);
+            classes.push_back(result);
+        }
+    }
+    return result;
+}
+
+std::shared_ptr<JavaClass> JavaObject::find_description(const std::string &package, const std::string &name) {
+    lock_guard<mutex> lock(classListLock);
     for (auto descriptor : classes) {
-        if (descriptor->package.compare(javaPackage) == 0 && descriptor->name.compare(name) == 0) {
-            classListLock.unlock();
+        if (descriptor->package.compare(package) == 0 && descriptor->name.compare(name) == 0) {
             return descriptor;
         }
     }
-
-    assert(superClass != nullptr);
-    classListLock.unlock();
-    JavaClass *descriptor = new JavaClass(javaPackage, name, superClass);
-    classListLock.lock();
-    classes.push_back(descriptor);
-    classListLock.unlock();
-    return descriptor;
+    return nullptr;
 }
 
 JavaObject::JavaObject() {}
@@ -62,8 +70,6 @@ void JavaObject::constructNewObject() {
         JNIHelper::getAttachedEnv()->DeleteGlobalRef((jobject) obj);
     });
 }
-
-JavaObject::JavaObject(const JavaObject &ref) : javaInstance(ref.javaInstance), methods(ref.methods) {}
 
 JavaObject::JavaObject(std::shared_ptr<void *> javaInstance) : javaInstance(javaInstance) {
 }
